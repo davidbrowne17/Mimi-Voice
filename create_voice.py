@@ -8,7 +8,7 @@ from torch import nn
 from torch.nn import functional as F
 import torchaudio
 import julius
-from safetensors.torch import save_file
+from safetensors.torch import save_file, load_file
 from huggingface_hub import hf_hub_download
 from moshi.models import loaders
 
@@ -203,19 +203,31 @@ def main():
 
     # Load the finetuned adapter model from HuggingFace
     print("Loading finetuned adapter from DavidBrowne17/Mimi-Voice...")
-    adapter_model_path = hf_hub_download("DavidBrowne17/Mimi-Voice", "mimi-voice.pt")
+    adapter_model_path = hf_hub_download("DavidBrowne17/Mimi-Voice", "mimi-voice.safetensors")
     adapter = MimiAdapter().to(DEVICE)
     try:
-        checkpoint = torch.load(adapter_model_path, map_location=DEVICE)
-        adapter.load_state_dict(checkpoint['adapter_state_dict'])
+        # Load from safetensors format
+        state_dict = load_file(adapter_model_path)
+        
+        # The safetensors file contains keys like "adapter_state_dict.layers.0.0.weight"
+        # We need to remove the "adapter_state_dict." prefix
+        cleaned_state_dict = {}
+        for key, value in state_dict.items():
+            if key.startswith("adapter_state_dict."):
+                new_key = key[len("adapter_state_dict."):]
+                cleaned_state_dict[new_key] = value
+            else:
+                cleaned_state_dict[key] = value
+        
+        adapter.load_state_dict(cleaned_state_dict)
         adapter.eval()
+        print(f"Successfully loaded adapter with {len(cleaned_state_dict)} parameters")
     except FileNotFoundError:
         print(f"FATAL: Adapter model not found at HuggingFace repository.", file=sys.stderr)
-        print("Please check that DavidBrowne17/Mimi-Voice contains mimi-voice.pt.", file=sys.stderr)
+        print("Please check that DavidBrowne17/Mimi-Voice contains mimi-voice.safetensors.", file=sys.stderr)
         sys.exit(1)
-    except (KeyError, TypeError):
-        print(f"FATAL: The downloaded file does not appear to be a valid adapter checkpoint.", file=sys.stderr)
-        print("It should be a dictionary containing the key 'adapter_state_dict'.", file=sys.stderr)
+    except Exception as e:
+        print(f"FATAL: Error loading safetensors file: {str(e)}", file=sys.stderr)
         sys.exit(1)
 
     # Initialize the Cleaner
