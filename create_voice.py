@@ -280,7 +280,7 @@ def main():
 
         # STEP 4: Save the final, usable embedding
         ext = ".1e68beda@240.safetensors"
-        out_file = output_path / (file.stem + ext)
+        out_file = output_path / (file.name + ext)
         tensors = {"speaker_wavs": final_emb.cpu().contiguous()}
         metadata = {"epoch": "240", "sig": "1e68beda"}
         save_file(tensors, out_file, metadata)
