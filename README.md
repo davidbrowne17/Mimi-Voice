@@ -15,3 +15,9 @@ python create_voice.py <input_folder> <output_folder>
 # You will need access to huggingface
 huggingface-cli login
 ```
+
+### Full License:
+You can read the full license text here:  
+[https://creativecommons.org/licenses/by-nc/4.0](https://creativecommons.org/licenses/by-nc/4.0)
+
+By requesting access or using this model, you agree to these terms.
